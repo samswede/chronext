@@ -335,8 +335,11 @@ def main_percent_change_v2():
     watch_data = process_watch_data(watch_models, smoothing_span, '2020-12-23')
 
     # Define color palettes
-    warm_colors = ['#D55E00', '#E69F00', '#F0E442', '#009E73', '#56B4E9', '#0072B2']
-    cool_colors = ['#56B4E9', '#0072B2', '#009E73']  # Example cool colors: sky blue, deep blue, teal
+
+
+    mixed_colors = ['#D55E00', '#E69F00', '#F0E442', '#009E73', '#56B4E9', '#0072B2']
+    warm_colors = ['#DC143C', '#FF7518', '#FFD700', '#EA7E5D', '#E9692C', '#FFBF00']
+    cool_colors = ['#000080', '#008080', '#40E0D0', '#AFEEEE', '#DDA0DD', '#00A36C']
 
     labels = []
     #labels.extend(market_indices)
@@ -344,7 +347,7 @@ def main_percent_change_v2():
 
     colors = ['grey']
     #colors.extend(cool_colors[:len(market_indices)])
-    colors.extend(warm_colors[:len(watch_models)])
+    colors.extend(mixed_colors[:len(watch_models)])
     
 
     original_data = [ 
