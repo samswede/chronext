@@ -27,7 +27,13 @@ def apply_percent_change_from_start(data):
 
 def apply_exponential_smoothing(data, data_col, span):
     """Applies exponential smoothing to a specified column of data."""
+    #print(data.head())
     return data[data_col].ewm(span=span, adjust=False).mean()
+
+def apply_exponential_smoothing_v2(data, data_col_index: int, span):
+    """Applies exponential smoothing to a specified column of data."""
+    #print(data.head())  # Print the first 5 rows of the DataFrame
+    return data.iloc[:, data_col_index].ewm(span=span, adjust=False).mean()
 
 def plot_data(original_data, smoothed_data, labels, colors, title, xlabel, ylabel):
     """Plots original and smoothed data on a single y-axis with customizable colors."""
@@ -168,6 +174,83 @@ def view_watch_data():
     print('Verify Audemars data is correct after filtering')
     print(audemars_data.head())
 
+def date_of_first_value(df):
+    """
+    Function to find the date of the first non-zero value in a DataFrame.
+
+    Parameters:
+    - df (pandas.DataFrame): Input DataFrame with a 'date' index and a 'Close' column containing numerical values.
+
+    Returns:
+    - str: Date of the first non-zero value in the 'Close' column (formatted as 'YYYY-MM-DD').
+    """
+    # Find the index of the first non-zero value in the 'Close' column
+    first_non_zero_index = df[df['Close'] != 0].index[0]
+    
+    # Convert the index to string format and return
+    return str(first_non_zero_index)
+
+def process_market_index_data(file_names, smoothing_span, data_directory="./data/market"):
+    results = {}
+    
+    for file_name in file_names:
+        # Construct the file path
+        file_path = f"{data_directory}/{file_name}.csv"
+        
+        # Construct variable names
+        data_key = f"{file_name.lower()}_data"
+        percent_change_key = f"{file_name.lower()}_percent_change"
+        smoothed_key = f"{file_name.lower()}_smoothed"
+        
+        # Load Market Index Data
+        data = clean_data(file_path, 'Date', 'Close', 'Close')
+        percent_change = apply_percent_change_from_start(data)
+        smoothed = apply_exponential_smoothing(percent_change, 'Close', smoothing_span)
+        
+        # Store results in the dictionary
+        results[data_key] = data
+        results[percent_change_key] = percent_change
+        results[smoothed_key] = smoothed
+    
+    return results
+
+def process_watch_data(file_names, smoothing_span, start_date, data_directory="./data/watches"):
+    results = {}
+    
+    for file_name in file_names:
+        # Construct the file path
+        file_path = f"{data_directory}/{file_name}.csv"
+        
+        # Construct variable names
+        data_key = f"{file_name.lower()}_data"
+        filtered_data_key = f"{file_name.lower()}_filtered"
+        percent_change_key = f"{file_name.lower()}_percent_change"
+        smoothed_key = f"{file_name.lower()}_smoothed"
+        
+        # Load Watch Data
+        data = clean_data(file_path, 'date', f'{file_name.replace("_", " ")} (CHF)', 'Close')
+        
+        # Identify the first non-zero value date
+        start_date = date_of_first_value(data)
+
+        # Filter data from start date
+        filtered_data = data[data.index >= start_date]
+        
+        # Apply percent change
+        percent_change = apply_percent_change_from_start(filtered_data)
+        
+        # Apply exponential smoothing
+        smoothed = apply_exponential_smoothing(percent_change, 'Close', smoothing_span)
+        
+        # Store results in the dictionary
+        results[data_key] = data
+        results[filtered_data_key] = filtered_data
+        results[percent_change_key] = percent_change
+        results[smoothed_key] = smoothed
+    
+    return results
+
+
 def main_percent_change():
     smoothing_span = 30
 
@@ -227,6 +310,129 @@ def main_percent_change():
     title = f'{smoothing_span}-Day EWMA: Watches vs. Swatch Group (UHR) Percent Change'
 
     plot_data(original_data, smoothed_data, labels, colors, title, 'Date', '% Price Change')
+
+def main_percent_change_v2():
+    smoothing_span = 30
+
+    # Process market index data
+    market_indices = ['MXX']
+
+    # Repurposing other function because this is a special case of non yahoo finance data
+    #market_data = process_watch_data(market_indices, smoothing_span, '2020-05-13', data_directory="./data/market")
+    # Otherwise, we would use the function below
+    market_data = process_market_index_data(market_indices, smoothing_span)
+
+    # Process watch data
+    watch_models = [
+                    'Breitling_RB0127', 
+                    'Omega_310', 
+                    'Cartier_WSSA0032', 
+                    'IWC_324101', 
+                    'Omega_310',
+                    'Rolex_1675'
+                    ]
+    
+    watch_data = process_watch_data(watch_models, smoothing_span, '2020-12-23')
+
+    # Define color palettes
+    warm_colors = ['#D55E00', '#E69F00', '#F0E442', '#009E73', '#56B4E9', '#0072B2']
+    cool_colors = ['#56B4E9', '#0072B2', '#009E73']  # Example cool colors: sky blue, deep blue, teal
+
+    labels = []
+    #labels.extend(market_indices)
+    labels.extend(watch_models)
+
+    colors = ['grey']
+    #colors.extend(cool_colors[:len(market_indices)])
+    colors.extend(warm_colors[:len(watch_models)])
+    
+
+    original_data = [ 
+                       # Market data
+                        #market_data['mxx_percent_change'],
+
+                        # Watches data
+                        watch_data['breitling_rb0127_percent_change'],
+                        watch_data['omega_310_percent_change'],
+                        watch_data['cartier_wssa0032_percent_change'],
+                        watch_data['iwc_324101_percent_change'],
+                        watch_data['omega_310_percent_change'],
+                        watch_data['rolex_1675_percent_change']
+                    ]
+    
+    smoothed_data = [
+                        # Market data
+                        #market_data['mxx_smoothed'],
+
+                        # Watches data
+                        watch_data['breitling_rb0127_smoothed'],
+                        watch_data['omega_310_smoothed'],
+                        watch_data['cartier_wssa0032_smoothed'],
+                        watch_data['iwc_324101_smoothed'],
+                        watch_data['omega_310_smoothed'],
+                        watch_data['rolex_1675_smoothed']
+                    ]
+    
+    title = f'{smoothing_span}-Day EWMA: Watches Performance in Percent Change'
+
+    plot_data(original_data, smoothed_data, labels, colors, title, 'Date', '% Price Change')
+
+
+
+
+def main_percent_change_v3():
+    smoothing_span = 30
+
+    mxx_data = clean_data('./data/market/MXX.csv', 'Date', 'Close', 'Close')
+    mxx_3_years = mxx_data[mxx_data.index >= '2022-12-23']
+    mxx_percent_change = apply_percent_change_from_start(mxx_3_years)
+    mxx_smoothed = apply_exponential_smoothing(mxx_percent_change, 'Close', smoothing_span)
+
+    # Load watches data
+    breitling_data = clean_data('./data/watches/Breitling_RB0127.csv', 'date', 'Breitling RB0127 (CHF)', 'Close')
+    cartier_data = clean_data('./data/watches/Cartier_WSSA0032.csv', 'date', 'Cartier WSSA0032 (CHF)', 'Close')
+
+    breitling_3_years = breitling_data[breitling_data.index >= '2022-12-23']
+    cartier_3_years = cartier_data[cartier_data.index >= '2022-12-23']
+
+    # Apply percent change
+    breitling_percent_change = apply_percent_change_from_start(breitling_3_years)
+    cartier_percent_change = apply_percent_change_from_start(cartier_3_years)
+
+    # Apply exponential smoothing
+    breitling_smoothed = apply_exponential_smoothing(breitling_percent_change, 'Close', smoothing_span)
+    cartier_smoothed = apply_exponential_smoothing(cartier_percent_change, 'Close', smoothing_span)
+
+    # Define color palettes
+
+    # Six warm that between purple and yellow
+    warm_colors = ['#D55E00', '#E69F00', '#F0E442', '#009E73', '#56B4E9', '#0072B2']    
+    warm_colors = ['#D55E00', '#E69F00', '#F0E442', '#009E73', '#56B4E9', '#0072B2']
+    cool_colors = ['#56B4E9', '#0072B2', '#009E73']  # Example cool colors: sky blue, deep blue, teal
+
+    labels = ['Monaco', 'Breitling RB0127', 'Cartier WSSA0032']
+
+    colors = ['grey', cool_colors[1], warm_colors[0], warm_colors[1], warm_colors[2], warm_colors[3], warm_colors[4], warm_colors[5] ]
+
+    original_data = [ 
+                        mxx_percent_change['Close'],
+
+                        breitling_percent_change,
+                        cartier_percent_change,
+                    ]
+    
+    smoothed_data = [
+
+                        mxx_smoothed,
+
+                        breitling_smoothed,
+                        cartier_smoothed,
+                    ]
+    
+    title = f'{smoothing_span}-Day EWMA: Watches Performance in Percent Change'
+
+    plot_data(original_data, smoothed_data, labels, colors, title, 'Date', '% Price Change')
+
 
 def main_absolute_watches():
     smoothing_span = 30
@@ -315,4 +521,4 @@ def main_dual_axis():
 
 
 if __name__ == '__main__':
-    main_absolute_watches()
+    main_percent_change_v2()

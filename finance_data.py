@@ -30,18 +30,20 @@ def main():
     """
     Main function to fetch and save data with predefined parameters.
     """
-    ticker = 'CFR.SW'  
+    ticker = '^MXX'  
     # Examples: 
     #   S&P 500 index: ^GSPC
     #   LVMH Moët Hennessy Louis Vuitton SE: MC.PA
     #   Swiss Market Index: ^SSMI
     #   Swatch Group (Swiss Company): UHR.SW
     #   Richemont (Swiss Company): CFR.SW
+    #   
+    #   Monaco Market Index: ^MXX
 
 
     start_date = '2020-05-13'
     end_date = '2024-05-11'
-    filename = 'CFR.csv'
+    filename = 'MXX.csv'
 
     data = fetch_data(ticker, start_date, end_date)
     save_data(data, filename)
